@@ -9,6 +9,8 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import plot_confusion_matrix
 from sklearn.metrics import plot_roc_curve
 
+import requests
+
 import re
 import pymorphy2
 from collections import Counter
@@ -114,7 +116,7 @@ y_pred = Logregres.predict(X_test)
 print(classification_report(y_test, y_pred))
 
 # отправляем в переменную всё содержимое текстового файла
-text = open('./toxic/tox3.txt', encoding='utf8').read()
+text = open('./toxic/priped.txt', encoding='utf8').read()
 
 # разбиваем текст на отдельные слова (знаки препинания останутся рядом со своими словами)
 corpus = text.split()
@@ -158,7 +160,7 @@ def make_comment():
     chain = [first_word]
 
     # сколько слов будет в готовом тексте
-    n_words = 50
+    n_words = 35
 
     # делаем цикл с нашим количеством слов
     for i in range(n_words):
@@ -175,11 +177,33 @@ clean_message = text_cleaning(message)
 X_example = vectorizer.transform([clean_message])
 toxic_propabality = Logregres.predict_proba(X_example)[0,1]
 
-while toxic_propabality < 0.5:
-    message = make_comment()
+def getSentenceCase(source: str):
+    output = ""
+    isFirstWord = True
+
+    for c in source:
+        if isFirstWord and not c.isspace():
+            c = c.upper()
+            isFirstWord = False
+        elif not isFirstWord and c in ".!?":
+            isFirstWord = True
+        else:
+            c = c.lower()
+
+        output = output + c
+
+    return output
+
+i = 1
+
+while i < 5:
+    message = '\n '+make_comment()
+    message = getSentenceCase(message)
     clean_message = text_cleaning(message)
     X_example = vectorizer.transform([clean_message])
     toxic_propabality = Logregres.predict_proba(X_example)[0,1]
-
-print(message)
-print(f'Probability of toxicity: {toxic_propabality:.2f}')
+    #url = "https://api.telegram.org/bot5422061989:AAHp2EiYmibgMDoT-ECEs-8CdvFAL6Rig6c/sendMessage?chat_id=-1001689427652&text="+message
+    #test = requests.post(url)
+    print(message)
+    print(f'Токсичность: {toxic_propabality:.2f}')
+    i += 1
